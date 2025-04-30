@@ -18,6 +18,8 @@ rule token = parse
   | "then"          { THEN }
   | "else"          { ELSE }
   | "let"           { LET }  
+  | "try"           { TRY }
+  | "with"          { WITH }
   | ";;"            { SEMISEMI }
   | '='             { EQUAL }
   | '<'             { LESS }
@@ -25,9 +27,13 @@ rule token = parse
   | ':'             { COLON }
   | '('             { LPAREN }
   | ')'             { RPAREN }
+  | '{'             { LBRACE }
+  | '}'             { RBRACE }  
   | '+'             { PLUS }
   | '-'             { MINUS }
   | '*'             { TIMES }
+  | '/'             { DIV }
+  | '|'             { BAR }
   | var             { VAR (Lexing.lexeme lexbuf) }
   | eof             { EOF }
 

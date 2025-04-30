@@ -25,11 +25,20 @@ and type_of ctx {Zoo.data=e; loc} =
 	  Not_found -> typing_error ~loc "unknown variable %s" x)
     | Int _ -> TInt
     | Bool _ -> TBool
+    | Div (e1,e2) -> check ctx TInt e1; check ctx TInt e2 ; TInt
     | Times (e1, e2) -> check ctx TInt e1 ; check ctx TInt e2 ; TInt
     | Plus (e1, e2) -> check ctx TInt e1 ; check ctx TInt e2 ; TInt
     | Minus (e1, e2) -> check ctx TInt e1 ; check ctx TInt e2 ; TInt
     | Equal (e1, e2) -> check ctx TInt e1 ; check ctx TInt e2 ; TBool
     | Less (e1, e2) -> check ctx TInt e1 ; check ctx TInt e2 ; TBool
+    | TryWith (e,handlers) -> 
+      let ty_e = type_of ctx e in 
+      List.iter (fun (_, handler_expr) ->
+        let ty_h = type_of ctx handler_expr in
+        if ty_h <> ty_e then typing_error ~loc "handler must return same type as try block"
+        ) handlers;
+        ty_e
+      | Raise _ -> typing_error ~loc "raised exceptions do not produce a value"  
     | If (e1, e2, e3) ->
       check ctx TBool e1 ;
       let ty = type_of ctx e2 in

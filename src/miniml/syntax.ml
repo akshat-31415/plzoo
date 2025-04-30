@@ -15,6 +15,7 @@ and expr' =
   | Var of name          		(* Variable *)
   | Int of int           		(* Non-negative integer constant *)
   | Bool of bool         		(* Boolean constant *)
+  | Div of expr * expr      (* Division [e1/e2] *) 
   | Times of expr * expr 		(* Product [e1 * e2] *)
   | Plus of expr * expr  		(* Sum [e1 + e2] *)
   | Minus of expr * expr 		(* Difference [e1 - e2] *)
@@ -23,6 +24,8 @@ and expr' =
   | If of expr * expr * expr 		(* Conditional [if e1 then e2 else e3] *)
   | Fun of name * name * ty * ty * expr (* Function [fun f(x:s):t is e] *)
   | Apply of expr * expr 		(* Application [e1 e2] *)
+  | TryWith of expr * (name * expr) list
+  | Raise of name
 
 (* Toplevel commands *)
 type command =

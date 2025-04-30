@@ -11,12 +11,17 @@
 %token PLUS
 %token MINUS
 %token TIMES
+%token DIV
 %token EQUAL LESS
 %token IF THEN ELSE
 %token FUN IS
 %token COLON
 %token LPAREN RPAREN
+%token LBRACE RBRACE
 %token LET
+%token BAR
+%token TRY
+%token WITH
 %token SEMISEMI
 %token EOF
 
@@ -29,8 +34,9 @@
 %nonassoc IS
 %nonassoc ELSE
 %nonassoc EQUAL LESS
+%nonassoc TRY WITH
 %left PLUS MINUS
-%left TIMES
+%left TIMES DIV
 %right TARROW
 
 %%
@@ -69,6 +75,8 @@ plain_expr:
     { Minus (e1, e2) }
   | e1 = expr TIMES e2 = expr
     { Times (e1, e2) }
+  | e1 = expr DIV e2 = expr 
+    { Div(e1,e2) }
   | e1 = expr EQUAL e2 = expr
     { Equal (e1, e2) }
   | e1 = expr LESS e2 = expr
@@ -77,6 +85,18 @@ plain_expr:
     { If (e1, e2, e3) }
   | FUN x = VAR LPAREN f = VAR COLON t1 = ty RPAREN COLON t2 = ty IS e = expr
     { Fun (x, f, t1, t2, e) }
+  | TRY LBRACE e = expr RBRACE WITH LBRACE hs = handler_list RBRACE
+    { TryWith (e, hs) }
+
+handler:
+  | exn_name = VAR TARROW handler_expr = expr
+    { (exn_name, handler_expr) }
+
+handler_list:
+  | BAR h = handler hs = handler_list
+      { h :: hs }
+  | BAR h = handler
+      { [h] }
 
 app_expr: mark_position(plain_app_expr) { $1 }
 plain_app_expr:

@@ -43,6 +43,7 @@ type mvalue =
 *)
 
 and instr =
+  | IDiv                            (** division *)
   | IMult                           (** multiplication *)
   | IAdd                            (** addition *)
   | ISub                            (** subtraction *)
@@ -55,6 +56,8 @@ and instr =
   | IBranch of frame * frame        (** branch *)
   | ICall                           (** execute a closure *)
   | IPopEnv                         (** pop environment *)
+  | ITry of frame * (name * frame) list
+  | IRaise of string
 
 (** A frame is a list (stack) of instructions *)
 and frame = instr list
@@ -126,13 +129,33 @@ let less = function
   | (MInt x) :: (MInt y) :: s -> MBool (y < x) :: s
   | _ -> error "int and int expected in less"
 
+(** Try with *)
+let div = function
+  | (MInt x) :: (MInt y) :: s -> 
+      if x = 0 then raise (Machine_error "DivisionByZero")
+      else MInt (y/x) :: s
+  | _ -> error "int and int expected in div"
+
+(** [run frm env] executes the frame [frm] in environment [env]. *)
+let rec run frm env =
+  let rec loop = function
+    | ([], [v], _) -> v
+    | ((i::is) :: frms, stck, envs) -> loop (exec i (is::frms) stck envs)
+    | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
+    | _ -> error "illegal end of program"
+  in
+    loop ([frm], [], [env])
+
 (** [exec instr frms stck envs] executes instruction [instr] in the
     given state [(frms, stck, envs)], where [frms] is a stack of frames,
     [stck] is a stack of machine values, and [envs] is a stack of
     environments. The return value is a new state. *)
-let exec instr frms stck envs =
+and exec instr frms stck envs =
   match instr with
     (* Arithmetic *)
+    | IDiv   -> 
+        (try (frms, div stck, envs)
+        with Failure _ -> raise (Machine_error "DivisionByZero"))
     | IMult  -> (frms, mult stck, envs)
     | IAdd   -> (frms, add stck, envs)
     | ISub   -> (frms, sub stck, envs)
@@ -142,6 +165,18 @@ let exec instr frms stck envs =
     | IVar x  -> (frms, (lookup x envs) :: stck, envs)
     | IInt k  -> (frms, (MInt k) :: stck, envs)
     | IBool b -> (frms, (MBool b) :: stck, envs)
+    | IRaise exn_name ->
+      raise (Machine_error exn_name)
+    | ITry (try_code, handlers) ->
+        (try 
+          let v = run try_code (List.hd envs) in
+          (frms, v :: stck, envs)
+        with Machine_error exn_name ->
+          match List.assoc_opt exn_name handlers with
+          | Some handler_code ->
+              (handler_code :: frms, stck, envs)
+          | None ->
+              raise (Machine_error exn_name))
     | IClosure (f, x, frm) ->
 	(match envs with
 	     env :: _ ->
@@ -159,13 +194,3 @@ let exec instr frms stck envs =
 	(match envs with
 	     [] -> error "no environment to pop"
 	   | _ :: envs' -> (frms, stck, envs'))
-
-(** [run frm env] executes the frame [frm] in environment [env]. *)
-let run frm env =
-  let rec loop = function
-    | ([], [v], _) -> v
-    | ((i::is) :: frms, stck, envs) -> loop (exec i (is::frms) stck envs)
-    | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
-    | _ -> error "illegal end of program"
-  in
-    loop ([frm], [], [env])
