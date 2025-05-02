@@ -1,0 +1,159 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper, margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage{titlesec}
+
+\definecolor{codegray}{gray}{0.95}
+\lstset{
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  language=OCaml,
+  keywordstyle=\bfseries,
+  showstringspaces=false
+}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\title{\textbf{SDF Project Report (CS1023)\\MiniML Abstract Machine with Exception Handling}}
+\author{Akshat Banzal \quad Roll Number: CS24BTECH11005 \\
+Atul Boyal \quad   Roll Number: CS24BTECH11008 \\}
+\date{2 May 2025}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+This project extends the MiniML language with support for exceptions. Specifically, we added two new exception mechanisms:
+\begin{itemize}
+    \item \texttt{DivisionByZero}
+    \item \texttt{GenericException}
+\end{itemize}
+We modified the abstract machine implementation in \texttt{machine.ml} to support raising and catching exceptions using the \texttt{IRaise} and \texttt{ITry} instructions.
+
+\section{Machine Architecture}
+The abstract machine executes MiniML programs using:
+\begin{itemize}
+    \item A \textbf{stack of frames} representing program code.
+    \item A \textbf{stack of values} for evaluation.
+    \item A \textbf{stack of environments} for variable bindings.
+\end{itemize}
+
+A machine value (\texttt{mvalue}) can be:
+\begin{itemize}
+    \item An integer (\texttt{MInt})
+    \item A boolean (\texttt{MBool})
+    \item A function closure (\texttt{MClosure})
+\end{itemize}
+
+\section{Instruction Set}
+There are a variety of instructions. We implemented IRaise and ITry.\subsection*{Arithmetic Instructions}
+\begin{lstlisting}
+IDiv, IMult, IAdd, ISub
+\end{lstlisting}
+
+\subsection*{Comparison Instructions}
+\begin{lstlisting}
+IEqual, ILess
+\end{lstlisting}
+
+\subsection*{Stack Manipulations}
+\begin{lstlisting}
+IInt of int
+IBool of bool
+IVar of name
+IClosure of name * name * frame
+\end{lstlisting}
+
+\subsection*{Control Flow}
+\begin{lstlisting}
+IBranch of frame * frame
+ICall
+IPopEnv
+\end{lstlisting}
+
+\subsection*{Exception Handling}
+\begin{lstlisting}
+IRaise of string
+ITry of frame * (name * frame) list
+\end{lstlisting}
+
+\section{Exception Handling Semantics}
+\subsection{IRaise}
+This instruction immediately raises a named exception. For example:
+\begin{lstlisting}
+| IRaise exn_name -> raise (Machine_error exn_name)
+\end{lstlisting}
+
+\subsection{ITry}
+This instruction implements \texttt{try ... with ...} by:
+\begin{enumerate}
+    \item Executing the \texttt{try} block.
+    \item Catching exceptions and matching them to handlers.
+    \item Executing the matched handler block if found.
+\end{enumerate}
+
+\section{Division By Zero}
+Division is now guarded against divide-by-zero errors using:
+\begin{lstlisting}
+| IDiv -> 
+    try (frms, div stck, envs)
+    with Failure _ -> raise (Machine_error "DivisionByZero")
+\end{lstlisting}
+
+\section{Sample Example}
+An example demonstrating exception handling:
+\begin{lstlisting}
+try
+  let x = 10 / 0 in x
+with
+  DivisionByZero -> 0
+\end{lstlisting}
+
+This will produce the result \texttt{0} due to catching the divide-by-zero.
+
+\section{Testing Strategy}
+We tested the machine using:
+\begin{itemize}
+    \item Arithmetic operations
+    \item Boolean comparisons
+    \item Function application
+    \item Closures and environments
+    \item Exception handling via \texttt{IRaise} and \texttt{ITry}
+\end{itemize}
+
+\section{Limitations}
+\begin{itemize}
+    \item Only string-tagged exceptions are supported.
+    \item Stack unwinding is minimal; no backtrace or nested \texttt{try} evaluation.
+\end{itemize}
+
+\section{Build Instructions}
+\begin{enumerate}
+    \item Install Dune and OCaml.
+    \item Navigate to the \texttt{src/miniml} directory.
+    \item Run: \texttt{dune build}
+    \item Use the provided Python CLI to run the machine.
+\end{enumerate}
+
+\section{Git Repository}
+The project is maintained on GitHub:
+\begin{itemize}
+    \item Tags were created for each milestone: \texttt{syntax}, \texttt{machine}, \texttt{testing}.
+    \item Code is modular and documented.
+\end{itemize}
+
+\section{Learnings}
+\begin{itemize}
+    \item Understood the working of abstract machines.
+    \item Learned to extend a compiler backend and runtime.
+    \item Gained experience with OCaml and functional programming.
+\end{itemize}
+
+\end{document}
